@@ -16,23 +16,53 @@
   </head>
   <body>
     <audio src="img/beep.wav" id="audio"></audio>
-    <div id="app" class="page col s12">
-      <div id="tempo">
-        <i class="fa fa-heart"></i>
-        <p id="clock"></p>
-        <p id="timer">00:00:00</p>
+    <main id="app" class="grey lighten-3">
+      <div class="row no-mar">
+        <div id="tempo" class="card-panel cyan darken-4 white-text center-align z-depth-5">
+          <h4 class="right-align info">
+            <i class="material-icons">info_outline</i>
+          </h4>
+          <div class="section">
+            <h3 id="clock">00:00 AM</h3>
+          </div>
+          <div class="section">
+            <h3 id="timer">00:00:00</h3>
+          </div>
+        </div>
       </div>
-      <div id="start">
-        <p id="startBtn">START</p>
+      <div class="row no-mar">
+        <div id="start" class="card-panel green lighten-1 center-align white-text z-depth-5">
+          <h3 id="startBtn">START</h3>
+          <h6 id="startedAt">---</h6>
+        </div>
       </div>
-    </div>
-    <div id="debug" class="page">
-      <div id="log"></div>
-      <div id="btns"></div>
-    </div>
+    </main>
+    <main id="about" class="grey lighten-3" style="display:none;">
+      <div class="row no-mar">
+        <div class="card-panel grey center-align z-depth-5">
+          <h4 class="right-align info no-mar center-align">
+            <i class="material-icons">info_outline</i><br/>
+            CPR Helper v 0.0.1
+          </h4>
+        </div>
+      </div>
+      <div class="row no-mar">
+        <div id="ajax" class="card-panel grey center-align z-depth-5">AJAX</div>
+      </div>
+      <div class="row no-mar">
+        <div id="local" class="card-panel grey center-align z-depth-5">Check Connectivity</div>
+      </div>
+    </main>
+    <footer class="page-footer grey darken-1 white-text no-pad">
+      <div class="footer-copyright">
+        <div class="container">
+          <a href="https://610ind.com" class="white-text">© 2018 610 Industries, LLC</a>
+        </div>
+      </div>
+    </footer>
+    <script type="text/javascript" src="cordova.js"></script>
     <script type="text/javascript" src="js/jquery-3.2.1.min.js"></script>
     <script type="text/javascript" src="js/materialize.min.js"></script>
-    <script type="text/javascript" src="cordova.js"></script>
     <script type="text/javascript" src="js/index.js"></script>
     <script type="text/javascript">
       app.initialize();
