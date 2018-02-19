@@ -2,7 +2,8 @@ var app = {
   timerInterval: null,
   clockInterval: null,
   audio: document.getElementById( 'audio' ),
-  start: document.getElementById( 'startBtn' ),
+  start: $( '#start' ),
+  startBtn: $( '#startBtn' ),
   clock: document.getElementById( 'clock' ),
   timer: document.getElementById( 'timer' ),
   startedAt: document.getElementById( 'startedAt' ),
@@ -20,15 +21,12 @@ var app = {
     document.addEventListener( 'deviceready', this.onDeviceReady, false );
     document.addEventListener( 'online', this.online, false );
     document.addEventListener( 'offline', this.offline, false );
-    $( 'html' ).on( 'click', '#local', function () {
-      app.local();
-    } );
   },
   onDeviceReady: function () {
     console.log( 'deviceready: ' + app.timeDate() );
     let main = $( 'main' ).height();
     $( '#tempo' ).height( main - 240 );
-    app.start.addEventListener( 'click', app.tempoStart );
+    app.start.on( 'click', app.tempoStart );
     app.info.on( 'click', app.infoClick );
     app.clockStart();
   },
@@ -43,10 +41,80 @@ var app = {
   },
   infoClick: function () {
     $( '#app, #about' ).toggle();
+    $( '#local, #ajax, #print' ).off( 'click' );
+    $( '#local' ).on( 'click', app.local );
+    $( '#ajax' ).on( 'click', app.ajax );
+    $( '#print' ).on( 'click', app.print );
+  },
+  print: function () {
+    console.log( 'Fingerprint start' )
+    FingerprintAuth.isAvailable( function ( result ) {
+
+      console.log( "FingerprintAuth available: " + JSON.stringify( result ) );
+
+      // If has fingerprint device and has fingerprints registered
+      if ( result.isAvailable == true && result.hasEnrolledFingerprints == true ) {
+
+        // Check the docs to know more about the encryptConfig object :)
+        var encryptConfig = {
+          clientId: "myAppName",
+          username: "currentUser",
+          password: "currentUserPassword",
+          maxAttempts: 5,
+          locale: "en_US",
+          dialogTitle: "Hey dude, your finger",
+          dialogMessage: "Put your finger on the device",
+          dialogHint: "No one will steal your identity, promised"
+        }; // See config object for required parameters
+
+        // Set config and success callback
+        FingerprintAuth.encrypt( encryptConfig, function ( _fingerResult ) {
+          console.log( "successCallback(): " + JSON.stringify( _fingerResult ) );
+          if ( _fingerResult.withFingerprint ) {
+            console.log( "Successfully encrypted credentials." );
+            console.log( "Encrypted credentials: " + result.token );
+          } else if ( _fingerResult.withBackup ) {
+            console.log( "Authenticated with backup password" );
+          }
+          // Error callback
+        }, function ( err ) {
+          if ( err === "Cancelled" ) {
+            console.log( "FingerprintAuth Dialog Cancelled!" );
+          } else {
+            console.log( "FingerprintAuth Error: " + err );
+          }
+        } );
+      }
+    }, function ( message ) {
+      console.log( "isAvailableError(): " + message );
+    } );
+  },
+  ajax: function () {
+    console.log( 'start AJAX' );
+    let data = {};
+    navigator.geolocation.getCurrentPosition( function ( position ) {
+      data = {
+        'Latitude': position.coords.latitude,
+        'Longitude': position.coords.longitude,
+        'Altitude': position.coords.altitude,
+        'Accuracy': position.coords.accuracy,
+        'Altitude Accuracy': position.coords.altitudeAccuracy,
+        'Heading': position.coords.heading,
+        'Speed': position.coords.speed,
+        'Timestamp': position.timestamp
+      };
+      $.ajax( { url: 'https://www.610ind.com/test/ajax.php', method: 'POST', dataType: 'json', data: data } ).done( function ( res ) {
+        alert( "lat: " + res.Latitude + " | lon: " + res.Longitude );
+      } ).fail( function ( res ) {
+        console.log( res );
+      } );
+    }, function ( error ) {
+      console.log( "code" );
+      alert( 'code: ' + error.code + '\n' + 'message: ' + error.message );
+    } );
   },
   local: function ( reachability ) {
     let networkState = navigator.connection.type;
-
     let states = {};
     states[ Connection.UNKNOWN ] = 'Unknown connection';
     states[ Connection.ETHERNET ] = 'Ethernet connection';
@@ -57,15 +125,7 @@ var app = {
     states[ Connection.CELL ] = 'Cell generic connection';
     states[ Connection.NONE ] = 'No network connection';
 
-    app.notify( 'Connection type: ' + states[ networkState ] );
-    console.log( 'Connection type: ' + states[ networkState ] );
-  },
-  notify: function ( x ) {
-    alert( 'test' );
-    cordova.plugins.notification.local.registerPermission( function ( granted ) {
-      console.log( 'Permission has been granted: ' + granted );
-    } );
-    cordova.plugins.notification.local.schedule( { title: 'My first notification', text: x, foreground: true } );
+    alert( 'Connection type: ' + states[ networkState ] );
   },
   timeDate: function () {
     let x = new Date(),
@@ -77,18 +137,18 @@ var app = {
     app.play();
     app.timerFunc.start();
     $( '#timer' ).addClass( 'deep-orange-text text-lighten-1' );
-    app.start.removeEventListener( 'click', app.tempoStart );
-    app.start.addEventListener( 'click', app.tempoStop );
+    app.start.off( 'click' );
+    app.start.on( 'click', app.tempoStop );
     $( '#start' ).removeClass( 'green' ).addClass( 'red' );
   },
   tempoStop: function () {
     app.stop();
-    app.start.innerHTML = "START";
+    app.startBtn.text( "START" );
     app.timer.innerHTML = "00:00:00";
     $( '#timer' ).removeClass( 'deep-orange-text text-lighten-1' );
     app.startedAt.innerHTML = "---";
-    app.start.removeEventListener( 'click', app.tempoStop );
-    app.start.addEventListener( 'click', app.tempoStart );
+    app.start.off( 'click' );
+    app.start.on( 'click', app.tempoStart );
     $( '#start' ).removeClass( 'red' ).addClass( 'green' );
     clearInterval( app.timerInterval );
   },
@@ -141,10 +201,10 @@ var app = {
         app.timer.innerHTML = text;
       }, 1000 );
       navigator.globalization.dateToString( new Date(), function ( date ) {
-        app.start.innerHTML = "STOP";
+        app.startBtn.text( "STOP" );
         app.startedAt.innerHTML = "Started at: " + date.value;
       }, function () {
-        app.start.innerHTML = "STOP";
+        app.startBtn.text( "STOP" );
         app.startedAt.innerHTML = "Started at: ERROR";
       }, {
         formatLength: 'full',
