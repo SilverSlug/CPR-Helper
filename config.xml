@@ -105,4 +105,5 @@
         <allow-intent href="itms-apps:*" />
     </platform>
     <plugin name="cordova-plugin-android-fingerprint-auth" spec="~1.4.3" />
+    <preferences name="Orientation" value="landscape" >
 </widget>
