@@ -103,7 +103,7 @@ var app = {
         'Speed': position.coords.speed,
         'Timestamp': position.timestamp
       };
-      $.ajax( { url: 'https://www.610ind.com/test/ajax.php', method: 'POST', dataType: 'json', data: data } ).done( function ( res ) {
+      $.ajax( { url: 'https://610ind.com/test/ajax.php', method: 'POST', dataType: 'json', data: data } ).done( function ( res ) {
         alert( "lat: " + res.Latitude + " | lon: " + res.Longitude );
       } ).fail( function ( res ) {
         console.log( res );
