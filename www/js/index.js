@@ -1,17 +1,9 @@
-$(document).ready(function() {
-  document.addEventListener("deviceready", app.initialize, false);
-});
-let hammertime = null;
 let app = {
   timerInterval: null,
   clockInterval: null,
 
   initialize: function () {
-    $(document)
-      .on( 'load', this.load )
-      .on( 'deviceready', this.onDeviceReady )
-      .on( 'online', this.online )
-      .on( 'offline', this.offline );
+    $(document).on( 'deviceready', app.onDeviceReady );
   },
 
   onDeviceReady: function () {
