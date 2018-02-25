@@ -1,3 +1,6 @@
+$(document).ready(function() {
+  document.addEventListener("deviceready", app.initialize, false);
+});
 let hammertime = null;
 let app = {
   timerInterval: null,
@@ -326,4 +329,3 @@ let app = {
     }
 
 };
-app.initialize();
