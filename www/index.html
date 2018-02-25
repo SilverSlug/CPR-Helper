@@ -8,10 +8,6 @@
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' gap:; style-src 'self' 'unsafe-inline'; media-src *"/>
     <link rel="stylesheet" type="text/css" href="css/materialize.min.css"/>
     <link rel="stylesheet" type="text/css" href="css/index.css"/>
-    <script type="text/javascript" src="cordova.js"></script>
-    <script type="text/javascript" src="js/jquery-3.2.1.min.js"></script>
-    <script type="text/javascript" src="js/materialize.min.js"></script>
-    <script type="text/javascript" src="js/hammer.min.js"></script>
     <title>CPR Helper</title>
   </head>
   <body>
@@ -133,7 +129,15 @@
       </div>
     </footer>
 
+
+    <script type="text/javascript" src="cordova.js"></script>
+    <script type="text/javascript" src="js/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="js/materialize.min.js"></script>
+    <script type="text/javascript" src="js/hammer.min.js"></script>
     <script type="text/javascript" src="js/index.js"></script>
+    <script type="text/javascript">
+      app.initialize();
+    </script>
 
   </body>
 </html>
