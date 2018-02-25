@@ -5,73 +5,146 @@
     <meta name="format-detection" content="telephone=no"/>
     <meta name="msapplication-tap-highlight" content="no"/>
     <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width"/>
-    <!-- This is a wide open CSP declaration. To lock this down for production, see below. -->
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' gap:; style-src 'self' 'unsafe-inline'; media-src *"/>
-    <!-- Good default declaration: * gap: is required only on iOS (when using UIWebView) and is needed for JS->native communication * https://ssl.gstatic.com is required only on Android and is needed for TalkBack to function properly * Disables use of
-    eval() and inline scripts in order to mitigate risk of XSS vulnerabilities. To change this: * Enable inline JS: add 'unsafe-inline' to default-src * Enable eval(): add 'unsafe-eval' to default-src * Create your own at http://cspisawesome.com -->
-    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: 'unsafe-inline' https://ssl.gstatic.com; style-src 'self' 'unsafe-inline'; media-src *"/> -->
     <link rel="stylesheet" type="text/css" href="css/materialize.min.css"/>
     <link rel="stylesheet" type="text/css" href="css/index.css"/>
+    <script type="text/javascript" src="cordova.js"></script>
+    <script type="text/javascript" src="js/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="js/materialize.min.js"></script>
+    <script type="text/javascript" src="js/hammer.min.js"></script>
     <title>CPR Helper</title>
   </head>
   <body>
-    <audio src="img/beep.wav" id="audio"></audio>
-    <main id="app" class="grey lighten-3">
-      <div class="row header">
-        <h4 class="col s6 text-bold">Super CPR</h4>
-        <h4 class="col s6 right-align info">
-          <img src="img/iconWithText40.png" onkeypress=""/>
-        </h4>
+
+    <audio id="sound_cowbell" src="img/cowbell.wav" id="audio"></audio>
+    <audio id="sound_ding" src="img/ding.wav" id="audio"></audio>
+    <audio id="sound_keyboard" src="img/keyboard.wav" id="audio"></audio>
+
+    <div class="overlay"></div>
+
+    <div id="sidebar" class="sidebar">
+      <img id="menuImg" src="img/menuHead.png"/>
+      <div style="padding-left:15px;">
+        <h5 class="yellowText">MENU</h5>
+        <ul>
+          <hr/>
+          <li class="menuItem" id="menu_home" target="HomeScreen">
+            <i class="material-icons">&#xE88A;</i>HOME
+          </li>
+          <hr/>
+          <li class="menuItem" id="menu_log" target="LogScreen">
+            <i class="material-icons">&#xE8EF;</i>LOG
+          </li>
+          <hr/>
+          <li class="menuItem" id="menu_settings" target="SettingsScreen">
+            <i class="material-icons">&#xE8B8;</i>SETTINGS
+          </li>
+          <hr/>
+          <li class="menuItem" id="menu_about" target="AboutScreen">
+            <i class="material-icons">&#xE88F;</i>ABOUT
+          </li>
+          <hr/>
+        </ul>
       </div>
+    </div>
+
+    <div class="row header no-mar" style="background-color:black;">
+      <h3 class="col s2 sidebar-toggle" style="margin: 5px 0">
+        <i class="material-icons" style="font-size:35px;">&#xE5D2;</i>
+      </h3>
+      <h5 class="col s4" style="margin: 12px 0">Super CPR</h5>
+      <h4 class="col s6 right-align info no-mar" style="margin: 5px 0">
+        <img class="menuItem" src="img/iconWithText40.png" target="HomeScreen"/>
+      </h4>
+    </div>
+
+    <main id="HomeScreen" class="grey lighten-3 Screen" style="display:inline-block;">
       <div class="row no-mar">
-        <div id="tempo" class="card-panel cyan darken-4 white-text center-align z-depth-5">
+        <div id="tempo" class="card-panel center-align z-depth-5">
           <div class="section">
-            <h3 id="clock">00:00 AM</h3>
+            <h4 class="no-mar" id="clock">00:00 AM</h4>
           </div>
+          <img id="super" src="img/logoOnly200x143.png"/>
           <div class="section">
-            <h3 id="timer">00:00:00</h3>
+            <h2 class="no-mar" id="timer">00:00</h2>
           </div>
         </div>
       </div>
       <div class="row no-mar">
-        <div id="start" class="card-panel green lighten-1 center-align white-text z-depth-5">
+        <div id="start" class="card-panel center-align white-text z-depth-5">
           <h3 id="startBtn">START</h3>
           <h6 id="startedAt">---</h6>
         </div>
       </div>
     </main>
-    <main id="about" class="grey lighten-3" style="display:none;">
+
+    <main id="LogScreen" class="grey lighten-3 Screen">
       <div class="row no-mar">
-        <div class="card-panel grey center-align z-depth-5">
-          <h4 class="right-align info no-mar center-align">
-            <i class="material-icons">info_outline</i><br/>
-            CPR Helper v 0.0.1
-          </h4>
+        <div id="logListCard" class="card-panel z-depth-5">
+          <div class="card-content white-text">
+            <h5 class="card-title" style="font-weight:bold;color:#efe06e;">Usage Log</h5>
+            <ul id="logList" style="overflow-y:auto;"></ul>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <main id="SettingsScreen" class="grey lighten-3 Screen">
+      <div class="row no-mar">
+        <div id="settingsCard" class="card-panel z-depth-5">
+          <div class="card-content white-text">
+            <h4 class="card-title" style="font-weight:bold;color:#efe06e;">Settings</h4>
+            <form id="soundRadio">
+              <ul id="settingsList">
+                <li><h5>Sound Select</h5></li>
+                <li>
+                  <input class="with-gap" id="cowbell" type="radio" name="sound">
+                  <label for="cowbell">Cowbell</label>
+                </li>
+                <hr/>
+                <li>
+                  <input class="with-gap" id="keyboard" type="radio" name="sound">
+                  <label for="keyboard">Keyboard</label>
+                </li>
+                <hr/>
+                <li>
+                  <input class="with-gap" id="ding" type="radio" name="sound">
+                  <label for="ding">Ding</label>
+                </li>
+                <hr/>
+                <li>
+                  <input class="with-gap" id="honk" type="radio" name="sound">
+                  <label for="honk">Honk</label>
+                </li>
+              </ul>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <main id="AboutScreen" class="grey lighten-3 Screen">
+      <div class="row no-mar">
+        <div id="aboutCard" class="card-panel z-depth-5">
+          <h4 class="right-align info no-mar center-align">About Super CPR</h4>
+          <p>&copy;&nbsp;2018 - 610 Industries, LLC</p>
+          <p>Super CPR is meant to be a tempo guide only and in no way is designed to establish any clinical standard. Use at your own risk. By using this application you agree to remove any liability associated with it's use from 610 Industries, LLC and it's owners, customers, contractors, or anyone in any way associated with 610 Insutries, LLC and this application.</p>
         </div>
       </div>
       <div class="row no-mar">
         <div id="ajax" class="card-panel grey center-align z-depth-5">AJAX</div>
       </div>
-      <div class="row no-mar">
-        <div id="local" class="card-panel grey center-align z-depth-5">Check Connectivity</div>
-      </div>
-      <div class="row no-mar">
-        <div id="print" class="card-panel grey center-align z-depth-5">Finger Print</div>
-      </div>
     </main>
-    <footer class="page-footer grey darken-1 white-text no-pad">
+
+    <footer class="page-footer black white-text no-pad">
       <div class="footer-copyright">
         <div class="container">
           <a href="https://610ind.com" class="white-text">© 2018 610 Industries, LLC</a>
         </div>
       </div>
     </footer>
-    <script type="text/javascript" src="cordova.js"></script>
-    <script type="text/javascript" src="js/jquery-3.2.1.min.js"></script>
-    <script type="text/javascript" src="js/materialize.min.js"></script>
+
     <script type="text/javascript" src="js/index.js"></script>
-    <script type="text/javascript">
-      app.initialize();
-    </script>
+
   </body>
 </html>

@@ -1,220 +1,329 @@
-var app = {
+let hammertime = null;
+let app = {
   timerInterval: null,
   clockInterval: null,
-  audio: document.getElementById( 'audio' ),
-  start: $( '#start' ),
-  startBtn: $( '#startBtn' ),
-  clock: document.getElementById( 'clock' ),
-  timer: document.getElementById( 'timer' ),
-  startedAt: document.getElementById( 'startedAt' ),
-  info: $( '.info' ),
-  // Application Constructor
+
   initialize: function () {
-    this.bindEvents();
+    $(document)
+      .on( 'load', this.load )
+      .on( 'deviceready', this.onDeviceReady )
+      .on( 'online', this.online )
+      .on( 'offline', this.offline );
   },
-  // Bind Event Listeners
-  //
-  // Bind any events that are required on startup. Common events are:
-  // 'load', 'deviceready', 'offline', and 'online'.
-  bindEvents: function () {
-    document.addEventListener( 'load', this.load, false );
-    document.addEventListener( 'deviceready', this.onDeviceReady, false );
-    document.addEventListener( 'online', this.online, false );
-    document.addEventListener( 'offline', this.offline, false );
-  },
+
   onDeviceReady: function () {
-    console.log( 'deviceready: ' + app.timeDate() );
-    let main = $( 'main' ).height();
-    $( '#tempo' ).height( main - 240 );
-    app.start.on( 'click', app.tempoStart );
-    app.info.on( 'click', app.infoClick );
     app.clockStart();
-  },
-  load: function () {
-    console.log( 'load: ' + app.timeDate() );
-  },
-  online: function () {
-    console.log( 'online: ' + app.timeDate() );
-  },
-  offline: function () {
-    console.log( 'offline: ' + app.timeDate() );
-  },
-  infoClick: function () {
-    $( '#app, #about' ).toggle();
-    $( '#local, #ajax, #print' ).off( 'click' );
-    $( '#local' ).on( 'click', app.local );
-    $( '#ajax' ).on( 'click', app.ajax );
-    $( '#print' ).on( 'click', app.print );
-  },
-  print: function () {
-    console.log( 'Fingerprint start' )
-    FingerprintAuth.isAvailable( function ( result ) {
+    app.nav('HomeScreen');
+    console.log( 'deviceready: ' + app.now() );
+    $( '#tempo' ).height( $( 'main' ).height() - 240 );
+    $( '#start' ).on( 'click', app.tempo.start );
+    $('.sidebar-toggle').on('click', function(){
+      app.sidebar('open');
+    });
+    $('.menuItem').on('click',function(){
+      app.nav($(this).attr('target'));
+      app.sidebar('close');
+    });
+    $('#menuImg').on('click',function(){
+      app.sidebar('close');
+    });
+    $('.Screen').hammer().on("swiperight", function() {
+      app.sidebar('open');
+    });
+    $('#overlay, #sidebar').hammer().on("swipeleft", function() {
+      app.sidebar('close');
+    });
 
-      console.log( "FingerprintAuth available: " + JSON.stringify( result ) );
+    app.initAd();
+  },
 
-      // If has fingerprint device and has fingerprints registered
-      if ( result.isAvailable == true && result.hasEnrolledFingerprints == true ) {
+  sidebar: function (x) {
+    let s = $('.sidebar'),
+      o = true;
+    if(s.offset().left == "-250" && x === 'open'){
+      s.css('left','0px');
+    }else if(s.offset().left == "0" && x === 'close'){
+      s.css('left','-250px');
+    }else{
+      o = false;
+    }
+    if (o){
+      $('.overlay')
+        .toggle()
+        .off('click')
+        .on('click', function(){
+          app.sidebar('close');
+        });
+    }
+  },
 
-        // Check the docs to know more about the encryptConfig object :)
-        var encryptConfig = {
-          clientId: "myAppName",
-          username: "currentUser",
-          password: "currentUserPassword",
-          maxAttempts: 5,
-          locale: "en_US",
-          dialogTitle: "Hey dude, your finger",
-          dialogMessage: "Put your finger on the device",
-          dialogHint: "No one will steal your identity, promised"
-        }; // See config object for required parameters
-
-        // Set config and success callback
-        FingerprintAuth.encrypt( encryptConfig, function ( _fingerResult ) {
-          console.log( "successCallback(): " + JSON.stringify( _fingerResult ) );
-          if ( _fingerResult.withFingerprint ) {
-            console.log( "Successfully encrypted credentials." );
-            console.log( "Encrypted credentials: " + result.token );
-          } else if ( _fingerResult.withBackup ) {
-            console.log( "Authenticated with backup password" );
-          }
-          // Error callback
-        }, function ( err ) {
-          if ( err === "Cancelled" ) {
-            console.log( "FingerprintAuth Dialog Cancelled!" );
-          } else {
-            console.log( "FingerprintAuth Error: " + err );
-          }
-        } );
+  nav: function(x){
+    $('.Screen').each(function(i,e){
+      if($(e).hasClass('active')){
+        let w = $(e).width()+250;
+        $(e).removeClass('active');
+        $(e).hide("fast",function(){
+          $('#' + x).show("fast");
+        });
       }
-    }, function ( message ) {
-      console.log( "isAvailableError(): " + message );
-    } );
+    });
+
+    $('#' + x).addClass('active');
+
+    switch(x){
+      case "HomeScreen":
+        break;
+      case "LogScreen":
+        $('#logList').html(app.log.ret());
+        $( '#logListCard' ).css( 'height', 'calc(100vh - 130px)');
+        $( '#logList' ).height( $( '#logListCard' ).height() - 50 );
+        break;
+      case "SettingsScreen":
+        $('input#'+app.settings.ret()).attr("checked","checked");
+        $('#soundRadio input').off('change').on('change', function(){
+          app.settings.change($(this).attr("id"));
+        });
+        break;
+      case "AboutScreen":
+        $('#ajax').off('click').on('click', function(){
+          app.ajax();
+        });
+        break;
+    }
   },
+
   ajax: function () {
     console.log( 'start AJAX' );
-    let data = {};
-    navigator.geolocation.getCurrentPosition( function ( position ) {
-      data = {
-        'Latitude': position.coords.latitude,
-        'Longitude': position.coords.longitude,
-        'Altitude': position.coords.altitude,
-        'Accuracy': position.coords.accuracy,
-        'Altitude Accuracy': position.coords.altitudeAccuracy,
-        'Heading': position.coords.heading,
-        'Speed': position.coords.speed,
-        'Timestamp': position.timestamp
-      };
-      $.ajax( { url: 'https://www.610ind.com/test/ajax.php', method: 'POST', dataType: 'json', data: data } ).done( function ( res ) {
-        alert( "lat: " + res.Latitude + " | lon: " + res.Longitude );
-      } ).fail( function ( res ) {
-        console.log( res );
-      } );
-    }, function ( error ) {
-      console.log( "code" );
-      alert( 'code: ' + error.code + '\n' + 'message: ' + error.message );
-    } );
+    $.ajax( {
+      url: 'https://610ind.com/test/ajax.php',
+      method: 'POST',
+      dataType: 'json',
+      data: {
+        data: "Hello YOU"
+      }
+    }).done( function ( res ) {
+      alert( res.data );
+      console.log( 'success AJAX' );
+    }).fail( function ( res ) {
+      console.log( res );
+      console.log( 'fail AJAX' );
+    });
   },
-  local: function ( reachability ) {
-    let networkState = navigator.connection.type;
-    let states = {};
-    states[ Connection.UNKNOWN ] = 'Unknown connection';
-    states[ Connection.ETHERNET ] = 'Ethernet connection';
-    states[ Connection.WIFI ] = 'WiFi connection';
-    states[ Connection.CELL_2G ] = 'Cell 2G connection';
-    states[ Connection.CELL_3G ] = 'Cell 3G connection';
-    states[ Connection.CELL_4G ] = 'Cell 4G connection';
-    states[ Connection.CELL ] = 'Cell generic connection';
-    states[ Connection.NONE ] = 'No network connection';
 
-    alert( 'Connection type: ' + states[ networkState ] );
+  settings: {
+    ret: function(){
+      return (localStorage.getItem("sound") === null) ? "cowbell":localStorage.getItem("sound");
+    },
+
+    change: function(x){
+      localStorage.setItem("sound",x);
+      alert("Metronome sound saved successfully!");
+    }
   },
-  timeDate: function () {
+
+  now: function () {
     let x = new Date(),
       d = x.toLocaleDateString(),
       t = x.toLocaleTimeString();
     return d + " " + t;
   },
-  tempoStart: function () {
-    app.play();
-    app.timerFunc.start();
-    $( '#timer' ).addClass( 'deep-orange-text text-lighten-1' );
-    app.start.off( 'click' );
-    app.start.on( 'click', app.tempoStop );
-    $( '#start' ).removeClass( 'green' ).addClass( 'red' );
+
+  tempo: {
+    start: function () {
+      app.play();
+      app.timerFunc.start();
+      $( '#start' )
+        .off( 'click' )
+        .on( 'click', app.tempo.stop )
+        .css( 'background-color', 'red' );
+    },
+
+    stop: function () {
+      app.timerFunc.stop();
+      $( '#startBtn' ).text( "START" );
+      $( '#timer' ).text("00:00");
+      $( '#startedAt' ).text("---");
+      $( '#start' )
+        .off( 'click' )
+        .on( 'click', app.tempo.start )
+        .css( 'background-color', 'rgba(0,0,255,0.7)' );
+      clearInterval( app.timerInterval );
+    }
   },
-  tempoStop: function () {
-    app.stop();
-    app.startBtn.text( "START" );
-    app.timer.innerHTML = "00:00:00";
-    $( '#timer' ).removeClass( 'deep-orange-text text-lighten-1' );
-    app.startedAt.innerHTML = "---";
-    app.start.off( 'click' );
-    app.start.on( 'click', app.tempoStart );
-    $( '#start' ).removeClass( 'red' ).addClass( 'green' );
-    clearInterval( app.timerInterval );
-  },
+
   clockStart: function () {
+    let c = $( '#clock' );
     app.clockInterval = setInterval( function () {
       navigator.globalization.dateToString( new Date(), function ( date ) {
-        app.clock.innerHTML = date.value;
+        c.text(date.value);
       }, function () {
-        app.clock.innerHTML = 'Error';
-      }, {
-        formatLength: 'short',
-        selector: 'time'
-      } );
-    }, 1000 );
-  },
-  play: function () {
-    if ( typeof audio.loop == 'boolean' ) {
-      audio.loop = true;
-    } else {
-      audio.addEventListener( 'ended', function () {
-        this.currentTime = 0;
-        this.play();
-      }, false );
-    }
-    audio.play();
-  },
-  stop: function () {
-    if ( typeof audio.loop == 'boolean' ) {
-      audio.loop = false;
-    }
-    this.currentTime = 0;
-    audio.pause();
-  },
-  timerFunc: {
-    start: function () {
-      let timerSec = 0,
-        timerMin = 0,
-        timerHou = 0;
-      app.timerInterval = setInterval( function () {
-        timerSec++;
-        if ( timerSec === 60 ) {
-          timerSec = 0;
-          timerMin++;
-        }
-        if ( timerMin === 60 ) {
-          timerMin = 0;
-          timerHou++;
-        }
-        let text = app.timerFunc.normalize( timerHou ) + timerHou + ":" + app.timerFunc.normalize( timerMin ) + timerMin + ":" + app.timerFunc.normalize( timerSec ) + timerSec;
-        app.timer.innerHTML = text;
-      }, 1000 );
-      navigator.globalization.dateToString( new Date(), function ( date ) {
-        app.startBtn.text( "STOP" );
-        app.startedAt.innerHTML = "Started at: " + date.value;
-      }, function () {
-        app.startBtn.text( "STOP" );
-        app.startedAt.innerHTML = "Started at: ERROR";
+        c.text('Error');
       }, {
         formatLength: 'full',
         selector: 'time'
       } );
+    }, 1000 );
+  },
+
+  play: function () {
+    let a = $('audio#sound_'+app.settings.ret())[0];
+    if ( typeof a.loop == 'boolean' ) {
+      a.loop = true;
+    } else {
+      a.addEventListener( 'ended', function () {
+        this.currentTime = 0;
+        this.play();
+      }, false );
+    }
+    a.play();
+  },
+
+  log:{
+    change: function(x) {
+      let log = (localStorage.getItem("log") === null) ? "[]":localStorage.getItem("log");
+      let json = JSON.parse(log);
+      try {
+        json.unshift(x);
+        if(json.length > 30){
+          json = json.slice(0,29);
+        }
+        localStorage.setItem("log",JSON.stringify(json));
+      }catch(e){
+        console.log("Logging Error");
+      }
     },
+
+    ret: function(){
+      let log = (localStorage.getItem("log") === null) ? "[]":localStorage.getItem("log");
+      let json = JSON.parse(log);
+      let html = "";
+      for (var k in json){
+        if (json.hasOwnProperty(k)) {
+          for (var l in json[k]){
+            if (json[k].hasOwnProperty(l)) {
+              let type = (l === "Start") ? '#efe06e':'red';
+              html += "<hr/><li style='color:"+type+";'>" + l + ": " + json[k][l] + "</li>";
+            }
+          }
+        }
+      }
+      return html += "<hr/>";
+    }
+  },
+
+  timerFunc: {
+    sec: 0,
+    min: 0,
+
+    stop: function () {
+      let a = $('audio#sound_'+app.settings.ret())[0];
+      if ( typeof a.loop == 'boolean' ) {
+        a.loop = false;
+      }
+      a.currentTime = 0;
+      app.timerFunc.sec = 0;
+      app.timerFunc.min = 0;
+      a.pause();
+
+      navigator.globalization.dateToString( new Date(), function ( date ) {
+        app.log.change({Stop:date.value});
+      }, function () {
+        app.log.change({Stop:'Error Saving Time'});
+      }, {
+        formatLength: 'medium',
+        selector: 'date and time'
+      } );
+    },
+
+    timer: function () {
+      app.timerFunc.sec++;
+      if ( app.timerFunc.sec === 60 ) {
+        app.timerFunc.sec = 0;
+        app.timerFunc.min++;
+      }
+      if ( app.timerFunc.min === 60 ) {
+        app.timerFunc.min = 0;
+      }
+      $( '#timer' ).text(app.timerFunc.normalize( app.timerFunc.min ) + ":" + app.timerFunc.normalize( app.timerFunc.sec ));
+    },
+
+    start: function () {
+      app.timerFunc.timer();
+      app.timerInterval = setInterval( function(){
+        app.timerFunc.timer();
+      }, 1000 );
+      $( '#startBtn' ).text( "STOP" );
+
+      navigator.globalization.dateToString( new Date(), function ( date ) {
+        $( '#startedAt' ).text("Started at: " + date.value);
+      }, function () {
+        $( '#startedAt' ).text("Started at: ERROR");
+      }, {
+        formatLength: 'full',
+        selector: 'time'
+      } );
+
+      navigator.globalization.dateToString( new Date(), function ( date ) {
+        app.log.change({Start:date.value});
+      }, function () {
+        app.log.change({Start:'Error Saving Time'});
+      }, {
+        formatLength: 'medium',
+        selector: 'date and time'
+      } );
+    },
+
     normalize: function ( x ) {
       return ( x < 10 )
-        ? "0"
-        : "";
+        ? "0" + x
+        : "" + x;
     }
-  }
+  },
+
+  initAd: function(){
+    if ( window.plugins && window.plugins.AdMob ) {
+      var ad_units = {
+        ios : {
+            banner: 'ca-app-pub-1667173736779668~4312087590',		//PUT ADMOB ADCODE HERE
+            interstitial: 'ca-app-pub-1667173736779668/4205998582'	//PUT ADMOB ADCODE HERE
+        },
+        android : {
+            banner: 'ca-app-pub-1667173736779668~1747356209',		//PUT ADMOB ADCODE HERE
+            interstitial: 'ca-app-pub-1667173736779668/1176510567'	//PUT ADMOB ADCODE HERE
+        }
+      };
+      var admobid = ( /(android)/i.test(navigator.userAgent) ) ? ad_units.android : ad_units.ios;
+      window.plugins.AdMob.setOptions( {
+          publisherId: admobid.banner,
+          interstitialAdId: admobid.interstitial,
+          adSize: window.plugins.AdMob.AD_SIZE.BANNER,	//use SMART_BANNER, BANNER, LARGE_BANNER, IAB_MRECT, IAB_BANNER, IAB_LEADERBOARD
+          bannerAtTop: true, // set to true, to put banner at top
+          overlap: true, // banner will overlap webview
+          offsetStatusBar: false, // set to true to avoid ios7 status bar overlap
+          isTesting: true, // receiving test ad
+          autoShowBanner: true // auto show interstitial ad when loaded
+      });
+      app.registerAdEvents();
+      window.plugins.AdMob.createInterstitialView();
+      window.plugins.AdMob.requestInterstitialAd();
+    } else {
+      console.log( 'admob plugin not ready' );
+    }
+  },
+
+  registerAdEvents: function() {
+        document.addEventListener('onReceiveAd', function(){});
+        document.addEventListener('onFailedToReceiveAd', function(data){});
+        document.addEventListener('onPresentAd', function(){});
+        document.addEventListener('onDismissAd', function(){ });
+        document.addEventListener('onLeaveToAd', function(){ });
+        document.addEventListener('onReceiveInterstitialAd', function(){ });
+        document.addEventListener('onPresentInterstitialAd', function(){ });
+        document.addEventListener('onDismissInterstitialAd', function(){
+        	window.plugins.AdMob.createInterstitialView();			//REMOVE THESE 2 LINES IF USING AUTOSHOW
+            window.plugins.AdMob.requestInterstitialAd();			//get the next one ready only after the current one is closed
+        });
+    }
+
 };
+app.initialize();
